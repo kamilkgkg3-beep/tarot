@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111a30"><title>Таро · Три карты</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--gold:#d9b96f;--night:#111a30;--cream:#f3e8cf}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 10%,#35436a,var(--night) 68%);color:#f7efd9;font-family:Georgia,serif;text-align:center;padding:calc(22px + env(safe-area-inset-top)) 14px calc(26px + env(safe-area-inset-bottom))}
+main{max-width:720px;margin:auto}h1{font-size:27px;font-weight:normal;color:#f2d99d;margin:8px 0 12px}p{color:#ddd3bf;line-height:1.5;margin:0 auto 24px;max-width:560px}
+.spread{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;perspective:1200px;margin:25px auto 18px;max-width:620px}
+.card{position:relative;aspect-ratio:0.62;cursor:pointer;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.2,.72,.2,1);border-radius:10px;outline:none}
+.card.flipped{transform:rotateY(180deg)}.face{position:absolute;inset:0;backface-visibility:hidden;border:2px solid var(--gold);border-radius:10px;overflow:hidden;box-shadow:0 10px 28px #0009}
+.back{background:repeating-linear-gradient(45deg,#1a2b4b 0 8px,#263b61 8px 10px);display:grid;place-items:center}.back:after{content:"✧";display:grid;place-items:center;border:2px solid var(--gold);border-radius:50%;width:62%;aspect-ratio:1;color:#efd28d;font-size:clamp(34px,9vw,62px);box-shadow:0 0 0 5px #1a2b4b,0 0 0 7px var(--gold)}
+.front{transform:rotateY(180deg);background:#e9dfc9}.front img{width:100%;height:100%;object-fit:contain}
+.number{font:12px Arial,sans-serif;color:#e9d49d;margin-top:10px}.hint{min-height:28px;color:#f0d99f;font:14px Arial,sans-serif}
+button{display:none;border:1px solid #f0d28c;border-radius:25px;background:linear-gradient(#e7cb8d,#b58d47);color:#1a2340;font-weight:bold;font-size:16px;padding:14px 25px;width:min(100%,340px);margin:14px auto 0}
+button:disabled{opacity:.55}.note{font:12px Arial,sans-serif;color:#aeb8ca;margin:24px auto 0}
+@media(max-width:360px){.spread{gap:6px}.card{border-radius:7px}}
+</style></head><body><main>
+<h1>Твой расклад Таро</h1>
+<p>Три карты ждут тебя рубашкой вверх. Открывай их в любом порядке. Каждая карта перевернётся с плавной 3D-анимацией.</p>
+<section class="spread" id="spread"></section>
+<div class="hint" id="hint">Выбери первую карту</div>
+<button id="done">Передать расклад боту</button>
+<div class="note">Трактовка носит символический характер и предназначена для размышления.</div>
+</main>
+<script>
+(()=> {
+ const tg=window.Telegram?.WebApp; tg?.ready(); tg?.expand();
+ const qs=new URLSearchParams(location.search), token=qs.get("token");
+ let cards=[]; try{cards=JSON.parse(qs.get("cards")||"[]")}catch(e){}
+ const spread=document.getElementById("spread"), hint=document.getElementById("hint"), done=document.getElementById("done"), order=[];
+ if(!token||!Array.isArray(cards)||cards.length!==3){hint.textContent="Не удалось загрузить карты. Вернись в чат и начни заново.";return}
+ cards.forEach((card,i)=>{
+   const el=document.createElement("div");el.className="card";el.tabIndex=0;el.setAttribute("role","button");el.setAttribute("aria-label",`Открыть карту ${i+1}`);
+   const back=document.createElement("div");back.className="face back";
+   const front=document.createElement("div");front.className="face front";
+   const img=document.createElement("img");img.alt=card.name;img.src="../images/"+encodeURIComponent(card.name)+".jpg";
+   img.onerror=()=>{front.textContent=card.name;front.style.display="grid";front.style.placeItems="center";front.style.color="#222";front.style.padding="8px";img.remove()};
+   front.appendChild(img);el.append(back,front);
+   const num=document.createElement("div");num.className="number";num.textContent=`Карта ${i+1}`;
+   const flip=()=>{if(order.includes(i))return;el.classList.add("flipped");order.push(i);el.setAttribute("aria-label",`Карта ${i+1} открыта`);hint.textContent=order.length===3?"Все три карты открыты. Можно передать расклад боту.":`Открыто ${order.length} из 3 карт`;if(order.length===3)done.style.display="block"};
+   el.addEventListener("click",flip);el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();flip()}});
+   const cell=document.createElement("div");cell.append(el,num);spread.appendChild(cell);
+ });
+ done.addEventListener("click",()=>{done.disabled=true;done.textContent="Передаю…";if(tg?.sendData){tg.sendData(JSON.stringify({token,order}))}else{hint.textContent="Открой приложение внутри Telegram, чтобы отправить расклад.";done.disabled=false;done.textContent="Передать расклад боту"}});
+})();
+</script></body></html>
